@@ -1,3 +1,4 @@
 /ndvi_data/*.tif
 /carbon_stock_data/*.html
-saved_data/*.tif
+/saved_data
+/test
