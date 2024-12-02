@@ -172,4 +172,3 @@ After deploying, test the backend by processing sample TIF files to verify that 
 - Ensure the backend server has sufficient permissions to read and write files in the specified directories.
 - Customize the backend application as needed to fit the specific requirements of your deployment environment.
 - The file is saved as a GeoTIFF, which means it contains geospatial data that can be imported into Google Earth Engine and displayed on an Android app using the Google Earth API.
-```
