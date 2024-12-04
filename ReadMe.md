@@ -33,10 +33,10 @@ pip install tensorflow tensorflow_decision_forests pandas numpy rasterio earthpy
 Example of loading the model using TensorFlow Decision Forests:
 
 ```python
-import tensorflow_decision_forests as tfdf
+import tensorflow as tf
 
 # Load the pre-trained model
-model = tfdf.keras.models.load_model('saved_data/NDVI_RF_V1')
+model = tf.saved_model.load('saved_data/NDVI_RF_V1')
 ```
 
 ## 4. Processing TIF Files
@@ -80,32 +80,20 @@ image_df = pd.DataFrame(np.array(image_data).T, columns=FEATURES)
 image_df['elevation'] = image_df['elevation'].astype(np.int64)
 ```
 
-### 4.3. Converting to TensorFlow Dataset
-
-Convert the DataFrame to a TensorFlow dataset compatible with the model:
-
-```python
-import tensorflow_decision_forests as tfdf
-
-image_ds = tfdf.keras.pd_dataframe_to_tf_dataset(image_df)
-```
-
-### 4.4. Making Predictions
+### 4.3. Making Predictions
 
 Use the loaded model to make predictions:
 
 ```python
-import numpy as np
-
-# Make predictions
-image_predictions = model.predict(image_ds)
-image_predicted_classes = np.argmax(image_predictions, axis=1)
+# Use the dictionary as input to the model
+prediction = model(dict(image_df))
+image_predicted_classes = np.argmax(prediction, axis=1)
 
 # Reshape predictions to image dimensions
 image_predicted_classes = image_predicted_classes.reshape(shape)
 ```
 
-### 4.5. Saving the Prediction as TIF
+### 4.4. Saving the Prediction as TIF
 
 Save the classified image to a TIF file:
 
