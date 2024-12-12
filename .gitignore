@@ -2,3 +2,5 @@
 /carbon_stock_data/*.html
 /test
 /carbon_stock_data
+/backend/*.json
+.env

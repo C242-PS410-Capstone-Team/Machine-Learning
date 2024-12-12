@@ -1,0 +1,10 @@
+Flask
+tempfile
+rasterio
+numpy
+pandas
+tensorflow
+tensorflow_decision_forests
+scikit-learn
+firebase-admin
+python-dotenv
