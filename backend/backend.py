@@ -186,11 +186,13 @@ def process_tif():
     # Upload Random Forest output to Firebase Storage
     rf_blob = bucket.blob(rf_filename)
     rf_blob.upload_from_filename(temp_rf_output.name)
+    rf_blob.make_public()
     rf_url = rf_blob.public_url
 
     # Upload KMeans output to Firebase Storage
     kmeans_blob = bucket.blob(kmeans_filename)
     kmeans_blob.upload_from_filename(temp_kmeans_output.name)
+    kmeans_blob.make_public()
     kmeans_url = kmeans_blob.public_url
 
     # Store URLs in Firestore
