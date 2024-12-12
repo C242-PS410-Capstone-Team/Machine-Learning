@@ -17,6 +17,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024  # 1 GB
+
 # Load the pre-trained random forest model
 RF_PATH = 'NDVI_RF_V1'
 FM_PATH = 'kmeans_model.pkl'
