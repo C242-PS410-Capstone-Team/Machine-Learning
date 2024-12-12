@@ -46,30 +46,30 @@ CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 @app.route('/process', methods=['POST'])
 def process_tif():
-    # Receive the files from the request
-    if 'file' not in request.files or 'csv_file' not in request.files or 'city_name' not in request.form:
-        return 'Files are missing', 400
-    tif_file = request.files['file']
-    csv_file = request.files['csv_file']
-    
-    if tif_file.filename == '' or csv_file.filename == '':
-        return 'No selected files', 400
-    
-    # Get city name from the request
-    city_name = request.form.get('city_name')
-    if not city_name:
-        return 'City name is missing', 400
-    
-    if city_name == '':
-        return 'City name is missing', 400
+    # Receive the file names from the request
+    if 'tif_filename' not in request.json or 'csv_filename' not in request.json or 'city_name' not in request.json:
+        return 'Parameters are missing', 400
 
-    # Save the uploaded TIF file to a temporary location
+    tif_filename = request.json.get('tif_filename')
+    csv_filename = request.json.get('csv_filename')
+    city_name = request.json.get('city_name')
+
+    if not tif_filename or not csv_filename or not city_name:
+        return 'Invalid parameters', 400
+
+    # Define the paths in Firebase Storage
+    tif_file_path = f"RawFiles/{tif_filename}"
+    csv_file_path = f"RawFiles/{csv_filename}"
+
+    # Download the TIF file from Firebase Storage
     temp_input = tempfile.NamedTemporaryFile(delete=False, suffix='.tif')
-    tif_file.save(temp_input.name)
+    tif_blob = bucket.blob(tif_file_path)
+    tif_blob.download_to_filename(temp_input.name)
 
-    # Save the uploaded CSV file to a temporary location
+    # Download the CSV file from Firebase Storage
     temp_csv = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
-    csv_file.save(temp_csv.name)
+    csv_blob = bucket.blob(csv_file_path)
+    csv_blob.download_to_filename(temp_csv.name)
 
     # Load image
     image = rasterio.open(temp_input.name)
