@@ -85,6 +85,17 @@ def process_tif():
     # Identify valid pixels
     valid_pixels = ~((image_df == 0).all(axis=1) | image_df.isnull().any(axis=1))
     valid_data = image_df[valid_pixels]
+    
+    # Calculate average NDVI
+    average_ndvi = image_df['NDVI'].mean()
+    
+    # Load CSV data from the uploaded file
+    csv_data = pd.read_csv(temp_csv.name)
+    
+    # Calculate average Carbon Stock
+    csv_features = csv_data[['CA', 'CB', 'CS']].values
+    average_carbon_stock = (csv_features[:, 0] + csv_features[:, 1] + csv_features[:, 2]).mean()
+    
     # Predict on valid data
     prediction = model_rf(dict(valid_data))
     valid_predicted_classes = np.argmax(prediction, axis=1)
@@ -195,12 +206,14 @@ def process_tif():
     kmeans_blob.make_public()
     kmeans_url = kmeans_blob.public_url
 
-    # Store URLs in Firestore
+    # Store URLs and averages in Firestore
     doc_ref = db.collection('data').document(city_name)
     doc_ref.set({
         'city_name': city_name,
         'url_ndvi': rf_url,
-        'url_final': kmeans_url
+        'url_final': kmeans_url,
+        'average_ndvi': float(average_ndvi),
+        'average_carbon_stock': float(average_carbon_stock)
     })
 
     return 'Upload successful', 200
