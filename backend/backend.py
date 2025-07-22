@@ -44,6 +44,23 @@ FEATURES = ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7',
 ALL_FEATURES = FEATURES
 CLASSES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
+# Define color palettes
+PALETTE = ['#F08080', '#D2B48C', '#87CEFA', '#008080', '#90EE90', '#228B22', '#808000', '#006400', '#FF8C00']
+custom_colors = ['#00FF00', '#FFFF00', '#FFA500', '#FF0000']
+
+def tiff_to_png(tif_path, png_path, palette):
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+
+    with rasterio.open(tif_path) as src:
+        data = src.read(1)
+        plt.figure(figsize=(10, 10))
+        cmap = mcolors.ListedColormap(palette)
+        plt.imshow(data, cmap=cmap)
+        plt.axis('off')
+        plt.savefig(png_path, bbox_inches='tight', pad_inches=0)
+        plt.close()
+
 @app.route('/process', methods=['POST'])
 def process_tif():
     # Receive the file names from the request
@@ -218,7 +235,67 @@ def process_tif():
         'average_carbon_stock': float(average_carbon_stock)
     })
 
+    # Delete temporary TIF files to free up memory
+    os.remove(temp_input.name)
+    os.remove(temp_csv.name)
+    os.remove(temp_rf_output.name)
+    os.remove(temp_kmeans_output.name)
+
     return 'Upload successful', 200
 
+@app.route('/convert_to_png', methods=['POST'])
+def convert_to_png():
+    # Receive the city name from the request
+    data = request.get_json()
+    city_name = data.get('city_name')
+    if not city_name:
+        return 'City name is missing', 400
+
+    # Define file paths in Firebase Storage
+    rf_tif_filename = f"{city_name}/random_forest.tif"
+    kmeans_tif_filename = f"{city_name}/final_model.tif"
+
+    # Download TIF files from Firebase Storage
+    temp_rf_tif = tempfile.NamedTemporaryFile(delete=False, suffix='.tif')
+    bucket.blob(rf_tif_filename).download_to_filename(temp_rf_tif.name)
+
+    temp_kmeans_tif = tempfile.NamedTemporaryFile(delete=False, suffix='.tif')
+    bucket.blob(kmeans_tif_filename).download_to_filename(temp_kmeans_tif.name)
+
+    # Convert TIF to PNG
+    rf_png_path = temp_rf_tif.name.replace('.tif', '.png')
+    tiff_to_png(temp_rf_tif.name, rf_png_path, PALETTE)
+
+    kmeans_png_path = temp_kmeans_tif.name.replace('.tif', '.png')
+    tiff_to_png(temp_kmeans_tif.name, kmeans_png_path, custom_colors)
+
+    # Upload PNGs to Firebase Storage
+    rf_png_filename = f"{city_name}/random_forest.png"
+    rf_png_blob = bucket.blob(rf_png_filename)
+    rf_png_blob.upload_from_filename(rf_png_path)
+    rf_png_blob.make_public()
+    rf_png_url = rf_png_blob.public_url
+
+    kmeans_png_filename = f"{city_name}/final_model.png"
+    kmeans_png_blob = bucket.blob(kmeans_png_filename)
+    kmeans_png_blob.upload_from_filename(kmeans_png_path)
+    kmeans_png_blob.make_public()
+    kmeans_png_url = kmeans_png_blob.public_url
+
+    # Update Firestore with PNG URLs
+    doc_ref = db.collection('data').document(city_name)
+    doc_ref.update({
+        'url_ndvi_png': rf_png_url,
+        'url_final_png': kmeans_png_url
+    })
+
+    # Delete temporary PNG files to free up memory
+    os.remove(temp_rf_tif.name)
+    os.remove(temp_kmeans_tif.name)
+    os.remove(rf_png_path)
+    os.remove(kmeans_png_path)
+
+    return 'PNG conversion and upload successful', 200
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
